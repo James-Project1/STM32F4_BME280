@@ -1,8 +1,0 @@
-../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
-../Drivers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	2
-../Drivers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
-../Src/i2c.c:24:6:i2c1_init	1
-../Src/i2c.c:35:13:i2c1_clock_init	1
-../Src/i2c.c:47:13:i2c1_gpio_init	1
-../Src/i2c.c:77:13:i2c1_configure	2
-../Src/i2c.c:98:13:i2c1_irq_init	1

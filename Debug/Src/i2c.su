@@ -1,8 +1,0 @@
-../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	16	static,ignoring_inline_asm
-../Drivers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	16	static
-../Drivers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	16	static
-../Src/i2c.c:24:6:i2c1_init	8	static
-../Src/i2c.c:35:13:i2c1_clock_init	4	static
-../Src/i2c.c:47:13:i2c1_gpio_init	4	static
-../Src/i2c.c:77:13:i2c1_configure	16	static
-../Src/i2c.c:98:13:i2c1_irq_init	8	static

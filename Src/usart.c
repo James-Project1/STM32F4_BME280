@@ -4,10 +4,10 @@
  *  Created on: Mar 11, 2026
  *  Author: james
  *
- *  uart2_init() - Initialise uart2 peripheral for interrupt-driven transmission
+ *  usart2_init() - Initialise uart2 peripheral for interrupt-driven transmission
  *  			 - Split into four stages, clocks, GPIO, USART2, Interrupt (NVIC)
  *
- *  uart2_write_bytes() - Public API called when tx of n bytes is required to host PC, producer function
+ *  usart2_write_bytes() - Public API called when tx of n bytes is required to host PC, producer function
  *  					- Interrupt-driven Tx
  *  					- returns immediately, does not stall CPU
  *
@@ -25,12 +25,12 @@ static void usart2_gpio_init(void);
 static void usart2_configure(void);
 static void usart2_irq_init(void);
 
-/* USART2 IRQ Handler */
+/* USART IRQ Handler */
 void USART2_IRQHandler(void);
 
 /* Static variables */
 /* ring buffer */
-static uint8_t tx_buf[USART2_TX_BUF_SIZE];
+static volatile uint8_t tx_buf[USART2_TX_BUF_SIZE];
 static volatile uint16_t head, tail;
 /* Tx active flag */
 static volatile uint8_t tx_active; /* 0 = idle, 1 = active */
@@ -43,9 +43,10 @@ void usart2_init(){
 	usart2_irq_init();
 }
 
-uart_status_t usart2_write_bytes(const uint8_t *buf, size_t n) {
+usart_status_t usart2_write_bytes(const uint8_t *buf, size_t n) {
 	if(buf == NULL || n == 0)return USART_STATUS_ERR;
 
+	uint32_t irq_state = NVIC_GetEnableIRQ(USART2_IRQn);
 	NVIC_DisableIRQ(USART2_IRQn); // USART IRQ disabled
 
 	/* compute free space in buffer is sufficient */
@@ -71,7 +72,7 @@ uart_status_t usart2_write_bytes(const uint8_t *buf, size_t n) {
 		USART2->CR1 |= USART_CR1_TXEIE; // set TXEIE
 	}
 
-	NVIC_EnableIRQ(USART2_IRQn); // USART IRQ enabled
+	if(irq_state)NVIC_EnableIRQ(USART2_IRQn); // USART IRQ enabled
 
 	return USART_STATUS_OK;
 }
@@ -85,7 +86,6 @@ void USART2_IRQHandler(void) {
 			tail++;
 			if(tail >= USART2_TX_BUF_SIZE)tail = 0;
 		}
-
 		else {
 			// tail == head, buffer empty no more data stop IRQ
 			USART2->CR1 &= ~USART_CR1_TXEIE;

@@ -18,9 +18,14 @@
 
 #include <stdint.h>
 #include "stm32f401xe.h"
+#include "usart.h"
 
 int main(void)
 {
+
+	usart2_init();
+
+	usart2_write_bytes((uint8_t*)"boot ok\r\n", 9);
 
 	while(1){}
 }

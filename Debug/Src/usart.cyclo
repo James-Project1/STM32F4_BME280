@@ -1,0 +1,11 @@
+../Drivers/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1775:22:__NVIC_ClearPendingIRQ	2
+../Drivers/CMSIS/Include/core_cm4.h:1814:22:__NVIC_SetPriority	2
+../Src/usart.c:39:6:usart2_init	1
+../Src/usart.c:46:15:usart2_write_bytes	8
+../Src/usart.c:80:6:USART2_IRQHandler	5
+../Src/usart.c:98:13:usart2_clock_init	1
+../Src/usart.c:107:13:usart2_gpio_init	1
+../Src/usart.c:129:13:usart2_configure	1
+../Src/usart.c:156:13:usart2_irq_init	1

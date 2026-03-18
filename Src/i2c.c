@@ -28,6 +28,181 @@ void i2c1_init(void) {
 	i2c1_irq_init();
 }
 
+i2c_status_t i2c1_read_regs(uint8_t addr7, uint8_t reg, uint8_t* buf, size_t n) {
+	if(buf == NULL || n == 0U)return I2C_STATUS_ERR_INVAILD_INPUT;
+	if(handle.state != I2C_STATE_IDLE && handle.state != I2C_STATE_DONE)return I2C_STATUS_BUSY;
+
+	handle.addr7 = addr7;
+	handle.reg = reg;
+
+	handle.rx_buf = buf;
+	handle.rx_len = n;
+	handle.rx_idx = 0;
+
+	handle.op = I2C_OP_READ_REGS;
+
+	handle.state = I2C_STATE_START_SENT;
+	handle.status = I2C_STATUS_OK;
+	handle.done = 0U;
+
+	I2C1->CR1 |= I2C_CR1_ACK;
+	I2C1->CR1 |= I2C_CR1_START;
+
+	return I2C_STATUS_OK;
+}
+
+i2c_status_t i2c1_write_reg(uint8_t addr7, uint8_t reg, uint8_t val) {
+	if(handle.state != I2C_STATE_IDLE && handle.state != I2C_STATE_DONE)return I2C_STATUS_BUSY;
+
+	handle.addr7 = addr7;
+	handle.reg = reg;
+
+	handle.tx_val = val;
+
+	handle.op = I2C_OP_WRITE_REG;
+
+	handle.status = I2C_STATUS_OK;
+	handle.state = I2C_STATE_START_SENT;
+	handle.done = 0U;
+
+	I2C1->CR1 |= I2C_CR1_START;
+
+	return I2C_STATUS_OK;
+}
+
+void I2C1_EV_IRQHandler(void) {
+	uint32_t sr1 = I2C1->SR1;
+	switch(handle.state) {
+	case I2C_STATE_START_SENT :
+			if(sr1 & I2C_SR1_SB) {
+				I2C1->DR = (uint8_t)((handle.addr7 << 1U) | 0); // 7 bit addr + write bit
+				handle.state = I2C_STATE_ADDR_W_SENT;
+			}
+			break;
+
+	case I2C_STATE_ADDR_W_SENT :
+		if(sr1 & I2C_SR1_ADDR) {
+			(void)I2C1->SR2; // dummy read to clear ADDR
+			I2C1->DR = handle.reg;
+			handle.state = I2C_STATE_REG_SENT;
+		}
+		break;
+
+	case  I2C_STATE_REG_SENT :
+		if(handle.op == I2C_OP_WRITE_REG) { // write path
+			if(sr1 & I2C_SR1_TXE) {
+				I2C1->DR = handle.tx_val;
+				handle.state = I2C_STATE_TX_VAL;
+			}
+		}
+		else {
+			if((sr1 & I2C_SR1_BTF) && (sr1 & I2C_SR1_TXE)) { // read path
+				I2C1->CR1 |= I2C_CR1_START; // generate repeated start
+				handle.state = I2C_STATE_START_R;
+			}
+		}
+		break;
+
+	case I2C_STATE_TX_VAL :
+		if((sr1 & I2C_SR1_BTF) && (sr1 & I2C_SR1_TXE)) {
+			I2C1->CR1 |= I2C_CR1_STOP;
+			I2C1->CR1 |= I2C_CR1_ACK;
+			handle.done = 1U;
+			handle.status = I2C_STATUS_OK;
+			handle.state = I2C_STATE_DONE;
+		}
+		break;
+
+	case I2C_STATE_START_R :
+		if(sr1 & I2C_CR1_START) {
+			I2C1->DR = (uint8_t)((handle.addr7 << 1U) | 1U);
+			handle.state = I2C_STATE_ADDR_R_SENT;
+		}
+		break;
+
+	case I2C_STATE_ADDR_R_SENT :
+		if(sr1 & I2C_SR1_ADDR) {
+			if(handle.rx_len == 1U) {
+				I2C1->CR1 &= ~I2C_CR1_ACK;
+				(void)I2C1->SR1;
+				(void)I2C1->SR2;
+				I2C1->CR1 |= I2C_CR1_STOP;
+				handle.state = I2C_STATE_RX_1;
+			}
+
+			else if(handle.rx_len == 2U) {
+				I2C1->CR1 |= I2C_CR1_POS;
+				I2C1->CR1 &= ~I2C_CR1_ACK;
+				(void)I2C1->SR1;
+				(void)I2C1->SR2;
+				handle.state = I2C_STATE_RX_2;
+			}
+
+			else { // if rx_len >= 3
+				I2C1->CR1 |= I2C_CR1_ACK;
+				(void)I2C1->SR1;
+				(void)I2C1->SR2;
+				handle.state = I2C_STATE_RX_BULK;
+			}
+		}
+
+	case I2C_STATE_RX_1 :
+		if(sr1 & I2C_SR1_RXNE) {
+			handle.rx_buf[handle.rx_idx++] = (uint8_t)I2C1->DR; // clears RXNE, executes STOP
+			I2C1->CR1 |= I2C_CR1_ACK;
+			handle.done = 1U;
+			handle.status = I2C_STATUS_OK;
+			handle.state = I2C_STATE_DONE;
+		}
+		break;
+
+	case I2C_STATE_RX_2 :
+		if(sr1 & I2C_SR1_BTF) {
+			I2C1->CR1 |= I2C_CR1_STOP; // queue STOP
+			handle.rx_buf[handle.rx_idx++] = (uint8_t)I2C1->DR; // first byte, shifts second into DR
+			handle.rx_buf[handle.rx_idx++] = (uint8_t)I2C1->DR; // second byte
+			I2C1->CR1 &= ~I2C_CR1_POS;
+			I2C1->CR1 |= I2C_CR1_ACK;
+			handle.done = 1U;
+			handle.status = I2C_STATUS_OK;
+			handle.state = I2C_STATE_DONE;
+		}
+		break;
+
+	case I2C_STATE_RX_BULK :
+		size_t rem = handle.rx_len - handle.rx_idx;
+
+		if(rem > 3U) {
+			if(sr1 & I2C_SR1_RXNE) {
+				handle.rx_buf[handle.rx_idx++] = (uint8_t)I2C1->DR;
+			}
+		}
+		else if(rem == 3U) {
+			if(sr1 & I2C_SR1_BTF) {
+				I2C1->CR1 &= ~I2C_CR1_ACK;
+				handle.rx_buf[handle.rx_idx++] = (uint8_t)I2C1->DR;
+				handle.state = I2C_STATE_RX_2;
+			}
+		}
+		break;
+
+	case I2C_STATE_DONE : // await next producer call
+		break;
+
+	default :
+		break;
+
+	}
+
+}
+
+i2c_state_t i2c1_get_state(void){
+	return handle.state;
+}
+
+uint8_t i2c1_is_done(void) {
+	return handle.done;
+}
 
 /* I2C IRQ Handler definitions */
 
@@ -104,6 +279,7 @@ static void i2c1_irq_init(void) {
 	NVIC_ClearPendingIRQ(I2C1_ER_IRQn);
 	NVIC_EnableIRQ(I2C1_ER_IRQn);
 
-	I2C1->CR2 |= I2C_CR2_ITEVTEN; // enable event interrupt
-	I2C1->CR2 |= I2C_CR2_ITERREN; // enable error interrupt
+	I2C1->CR2 |= I2C_CR2_ITEVTEN; // enable sequencing event interrupt
+	I2C1->CR2 |= I2C_CR2_ITBUFEN; // enable buffer event interrupts
+	I2C1->CR2 |= I2C_CR2_ITERREN; // enable error event interrupt
 }

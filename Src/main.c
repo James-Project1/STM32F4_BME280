@@ -20,11 +20,13 @@
 #include "stm32f401xe.h"
 #include "usart.h"
 #include "i2c.h"
+#include "bme280.h"
 
 int main(void)
 {
 	usart2_init();
 	i2c1_init();
+	bme280_init();
 
 	usart2_write_bytes((uint8_t*)"boot ok\r\n", 9);
 

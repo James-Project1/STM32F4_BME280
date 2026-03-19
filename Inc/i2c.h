@@ -14,7 +14,7 @@
 typedef enum {
 	I2C_STATUS_OK,
 	I2C_STATUS_BUSY,
-	I2C_STATUS_ERR_INVAILD_INPUT,
+	I2C_STATUS_ERR_INVALID_INPUT,
 	I2C_STATUS_ERR
 }i2c_status_t; // enum for i2c status
 
@@ -39,7 +39,6 @@ typedef enum {
 	I2C_STATE_RX_1,
 	I2C_STATE_RX_2,
 	I2C_STATE_RX_BULK,
-	I2C_STATE_RX_LAST2,
 
 	// done state
 	I2C_STATE_DONE

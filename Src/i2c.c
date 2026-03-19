@@ -10,15 +10,15 @@
 #include "stm32f401xe.h"
 #include "config.h"
 
-/* private API */
+/* private API declaration */
 static void i2c1_clock_init(void);
 static void i2c1_gpio_init(void);
 static void i2c1_configure(void);
 static void i2c1_irq_init(void);
-/* I2C IRQ Handler */
+/* I2C IRQ Handler declaration */
 void I2C1_EV_IRQHandler(void);
 void I2C1_ER_IRQHandler(void);
-/* static variables */
+/* static variables declaration */
 static volatile i2c_context_t handle;
 /* public API definitions */
 void i2c1_init(void) {
@@ -29,7 +29,8 @@ void i2c1_init(void) {
 }
 
 i2c_status_t i2c1_read_regs(uint8_t addr7, uint8_t reg, uint8_t* buf, size_t n) {
-	if(buf == NULL || n == 0U)return I2C_STATUS_ERR_INVAILD_INPUT;
+	if(buf == NULL || n == 0U)return I2C_STATUS_ERR_INVALID_INPUT;
+	if(addr7 > 0x7FU)return I2C_STATUS_ERR_INVALID_INPUT;
 	if(handle.state != I2C_STATE_IDLE && handle.state != I2C_STATE_DONE)return I2C_STATUS_BUSY;
 
 	handle.addr7 = addr7;
@@ -52,6 +53,7 @@ i2c_status_t i2c1_read_regs(uint8_t addr7, uint8_t reg, uint8_t* buf, size_t n) 
 }
 
 i2c_status_t i2c1_write_reg(uint8_t addr7, uint8_t reg, uint8_t val) {
+	if(addr7 > 0x7FU)return I2C_STATUS_ERR_INVALID_INPUT;
 	if(handle.state != I2C_STATE_IDLE && handle.state != I2C_STATE_DONE)return I2C_STATUS_BUSY;
 
 	handle.addr7 = addr7;
@@ -70,6 +72,15 @@ i2c_status_t i2c1_write_reg(uint8_t addr7, uint8_t reg, uint8_t val) {
 	return I2C_STATUS_OK;
 }
 
+i2c_state_t i2c1_get_state(void){
+	return handle.state;
+}
+
+uint8_t i2c1_is_done(void) {
+	return handle.done;
+}
+
+/* I2C IRQ Handler definitions */
 void I2C1_EV_IRQHandler(void) {
 	uint32_t sr1 = I2C1->SR1;
 	switch(handle.state) {
@@ -114,7 +125,7 @@ void I2C1_EV_IRQHandler(void) {
 		break;
 
 	case I2C_STATE_START_R :
-		if(sr1 & I2C_CR1_START) {
+		if(sr1 & I2C_SR1_SB) {
 			I2C1->DR = (uint8_t)((handle.addr7 << 1U) | 1U);
 			handle.state = I2C_STATE_ADDR_R_SENT;
 		}
@@ -145,6 +156,7 @@ void I2C1_EV_IRQHandler(void) {
 				handle.state = I2C_STATE_RX_BULK;
 			}
 		}
+		break;
 
 	case I2C_STATE_RX_1 :
 		if(sr1 & I2C_SR1_RXNE) {
@@ -169,7 +181,7 @@ void I2C1_EV_IRQHandler(void) {
 		}
 		break;
 
-	case I2C_STATE_RX_BULK :
+	case I2C_STATE_RX_BULK : {
 		size_t rem = handle.rx_len - handle.rx_idx;
 
 		if(rem > 3U) {
@@ -185,6 +197,7 @@ void I2C1_EV_IRQHandler(void) {
 			}
 		}
 		break;
+	}
 
 	case I2C_STATE_DONE : // await next producer call
 		break;
@@ -196,15 +209,27 @@ void I2C1_EV_IRQHandler(void) {
 
 }
 
-i2c_state_t i2c1_get_state(void){
-	return handle.state;
-}
+void I2C1_ER_IRQHandler(void) {
+    uint32_t sr1 = I2C1->SR1;
 
-uint8_t i2c1_is_done(void) {
-	return handle.done;
-}
+    /* clear all error flags — write 0 to each set bit */
+    if(sr1 & I2C_SR1_BERR) I2C1->SR1 &= ~I2C_SR1_BERR;
+    if(sr1 & I2C_SR1_ARLO) I2C1->SR1 &= ~I2C_SR1_ARLO;
+    if(sr1 & I2C_SR1_AF)   I2C1->SR1 &= ~I2C_SR1_AF;
+    if(sr1 & I2C_SR1_OVR)  I2C1->SR1 &= ~I2C_SR1_OVR;
 
-/* I2C IRQ Handler definitions */
+    /* release the bus */
+    I2C1->CR1 |= I2C_CR1_STOP;
+
+    /* restore ACK and POS to known state */
+    I2C1->CR1 &= ~I2C_CR1_POS;
+    I2C1->CR1 |=  I2C_CR1_ACK;
+
+    /* signal failure to caller */
+    handle.status = I2C_STATUS_ERR;
+    handle.done   = 1U;
+    handle.state  = I2C_STATE_DONE;
+}
 
 /* private API definitions */
 static void i2c1_clock_init(void) {

@@ -19,12 +19,25 @@
 #include <stdint.h>
 #include "stm32f401xe.h"
 #include "usart.h"
+#include "i2c.h"
 
 int main(void)
 {
 	usart2_init();
+	i2c1_init();
 
 	usart2_write_bytes((uint8_t*)"boot ok\r\n", 9);
 
+	uint8_t chip_id = 0U;
+	i2c1_read_regs(0x77, 0xD0, &chip_id, 1U);
+
+	    // non-blocking wait
+	    while(!i2c1_is_done());
+
+	    if(chip_id == 0x60U) {
+	        usart2_write_bytes((uint8_t*)"BME280 ok\r\n", 11);
+	    } else {
+	        usart2_write_bytes((uint8_t*)"BME280 fail\r\n", 13);
+	    }
 	while(1){}
 }

@@ -34,18 +34,6 @@ bme280_status_t bme280_init(void) {
 	return BME280_STATUS_OK;
 }
 
-bme280_status_t bme280_trigger_measurement(void) {
-	uint8_t busy = 0U;
-	if(i2c1_read_regs(BME280_ADDR, BME280_STATUS_REG, &busy, 1) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;
-	if(i2c_wait() != BME280_STATUS_OK) return BME280_STATUS_ERR_I2C;
-	if(busy & BME280_STATUS_MEASURING)return BME280_STATUS_BUSY;
-
-	if(i2c1_write_reg(BME280_ADDR, BME280_CTRL_MEAS_REG, BME280_MODE_FORCED) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;
-	if(i2c_wait() != BME280_STATUS_OK) return BME280_STATUS_ERR_I2C;
-
-	return BME280_STATUS_OK;
-}
-
 bme280_status_t bme280_read_raw(void) {
 	uint8_t busy = 0U;
 	if(i2c1_read_regs(BME280_ADDR, BME280_STATUS_REG, &busy, 1) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;

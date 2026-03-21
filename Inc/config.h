@@ -15,6 +15,7 @@
 #define USART2_PRIORITY 		15
 #define I2C1_EV_PRIORITY 		5
 #define I2C1_ER_PRIORITY 		4
+#define EXTI_PRIORITY			3
 /* uart */
 #define USART2_BAUDRATE 		115200U
 #define USART2_TX_BUF_SIZE 		256U
@@ -37,9 +38,9 @@
 #define BME280_CTRL_HUM_REG     0xF2U
 #define BME280_CTRL_HUM_VAL 	0x01U
 #define BME280_CTRL_MEAS_REG    0xF4U
-#define BME280_CTRL_MEAS_VAL	0x24U
+#define BME280_CTRL_MEAS_VAL	0x27U
 #define BME280_CONFIG_REG       0xF5U
-#define BME280_CONFIG_VAL 		0x00U
+#define BME280_CONFIG_VAL 		0xA0U // 1hz sample rate
 #define BME280_MODE_FORCED 		0x25U
 /* status */
 #define BME280_STATUS_REG       0xF3U

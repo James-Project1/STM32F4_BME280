@@ -82,7 +82,6 @@ typedef struct {
 
 /* bme280_driver API */
 bme280_status_t bme280_init(void);
-bme280_status_t bme280_trigger_measurement(void);
 bme280_status_t bme280_read_raw(void);
 
 uint8_t bme280_is_done(void);

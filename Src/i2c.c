@@ -18,7 +18,7 @@ static void i2c1_irq_init(void);
 /* I2C IRQ Handler declaration */
 void I2C1_EV_IRQHandler(void);
 void I2C1_ER_IRQHandler(void);
-/* static variables declaration */
+/* static declarations */
 static volatile i2c_context_t handle;
 /* public API definitions */
 void i2c1_init(void) {

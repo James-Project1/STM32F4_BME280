@@ -16,30 +16,25 @@
  ******************************************************************************
  */
 
-#include <stdint.h>
-#include "stm32f401xe.h"
+#include <stdio.h>
+#include <string.h>
 #include "usart.h"
 #include "i2c.h"
+#include "systick.h"
 #include "bme280.h"
 
 int main(void)
 {
-	usart2_init();
-	i2c1_init();
-	bme280_init();
+    usart2_init();
+    systick_init();
+    i2c1_init();
 
-	usart2_write_bytes((uint8_t*)"boot ok\r\n", 9);
+    if(bme280_init() != BME280_STATUS_OK) {
+        usart2_write_bytes((uint8_t*)"bme280 init fail\r\n", 18);
+        while(1){}
+    }
 
-	uint8_t chip_id = 0U;
-	i2c1_read_regs(0x77, 0xD0, &chip_id, 1U);
+    usart2_write_bytes((uint8_t*)"bme280 init ok\r\n", 16);
 
-	    // non-blocking wait
-	    while(!i2c1_is_done());
-
-	    if(chip_id == 0x60U) {
-	        usart2_write_bytes((uint8_t*)"BME280 ok\r\n", 11);
-	    } else {
-	        usart2_write_bytes((uint8_t*)"BME280 fail\r\n", 13);
-	    }
-	while(1){}
+    while(1){};
 }

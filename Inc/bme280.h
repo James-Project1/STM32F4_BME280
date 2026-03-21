@@ -21,7 +21,7 @@
  *	   		- retval : const bme280_raw_t*
  *	   		- returns pointer to internal raw ADC struct.
  *
- *	   	bme280_get_compensated() :
+ *	   	bme280_get_calib() :
  *	   		- retval : const bme280_calib_t*
  *	   		- returns pointer to internal calibration struct.
  *

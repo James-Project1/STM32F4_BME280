@@ -14,7 +14,6 @@
 static void bme280_compensate_temp(const bme280_raw_t* raw, const bme280_calib_t* calib);
 static void bme280_compensate_press(const bme280_raw_t* raw, const bme280_calib_t* calib);
 static void bme280_compensate_hum(const bme280_raw_t* raw, const bme280_calib_t* calib);
-
 /* static variables */
 static bme280_data_t data;
 static int32_t t_fine;

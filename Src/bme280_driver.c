@@ -4,8 +4,6 @@
  *  Created on: Mar 11, 2026
  *      Author: james
  *
- *      bme280_reset() :
- *      	- Puts chip into a guaranteed know state
  */
 #include "bme280.h"
 #include "stm32f401xe.h"

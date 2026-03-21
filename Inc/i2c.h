@@ -1,8 +1,41 @@
 /*
  * i2c.h
  *
- *  Created on: Mar 11, 2026
+ *  	Created on: Mar 11, 2026
  *      Author: james
+ *
+ *      i2c1_init() :
+ *      	- configure PB8/PB9 as open drain AF4, configures I2C1 for standard
+ *      	  100kHz mode, enables event and error interrupts in NVIC.
+ *
+ *      i2c1_write_reg() :
+ *      	- param[in] : addr7	   7bit device address
+ *      	- param[in] : reg 	   target register address
+ *      	- param[in] : val 	   byte value to write
+ *      	- producer function, fires start condition and returns immediately.
+ *      	  ISR advances the state machine to completion.
+ *
+ *      i2c1_read_regs() :
+ *      	- param[in] : addr7    7bit device address
+ *      	- param[in] : reg 	   first register address to read
+ *      	- param[in] : buf      destination buffer
+ *      	- param[in] : n        number of bytes to read
+ *      	- producer function, fires start condition and returns immediately.
+ *      	  supports single, double and bulk (n>=3) receive paths, caller must
+ *      	  poll i2c1_is_done().
+ *
+ *      i2c1_is_done() :
+ *      	- returns done flag from internal context, 1 is done.
+ *
+ *      i2c1_get_state() :
+ *      	- returns current state from internal context.
+ *
+ *      Note : I2C speed, NVIC priorities and pin assignments are controlled by macros
+ *             in config.h.
+ *
+ *             Both i2c1_write_reg() and i2c1_read_regs() return immediately after firing
+ *             start condition. Caller is responsible for waiting on i2c1_is_done() before
+ *             issuing next transaction.
  */
 
 #ifndef I2C_H_
@@ -46,19 +79,19 @@ typedef enum {
 }i2c_state_t; // states for state machine
 
 typedef struct {
-	uint8_t addr7; // 7 bit address
+	uint8_t addr7; // 7 bit device address
 	uint8_t reg; // register address to read from or write to
 
 	uint8_t* rx_buf; // destination buffer
 	size_t rx_len; // #bytes to read
 	size_t rx_idx; // #bytes already read
 
-	uint8_t tx_val; // write val
+	uint8_t tx_val; // value to write
 
 	i2c_op_t op; // operation type (r/w)
-	volatile i2c_state_t state; // advanced by ISR
+	volatile i2c_state_t state; // curr state, advanced by ISR
 	volatile i2c_status_t status;
-	volatile uint8_t done;
+	volatile uint8_t done; // set to 1 by ISR upon completion
 }i2c_context_t; // struct to store current context of i2c
 
 void i2c1_init(void);

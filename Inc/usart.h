@@ -5,16 +5,24 @@
  *      Author: james
  *
  *      usart_init() :
- *      	- param[in] : NONE
- *      	- retval 	: NONE
+ *      	- init USART2 peripheral including baud rate, configure PA2
+ *      	  as Tx line, init ring buffer. Tx interrupt only enabled
+ *      	  when data is queued.
  *
  *      usart_write_bytes() :
- *      	- param[in] : buf 				Pointer to the data to transmit. Must not be NULL.
- *      	- param[in] : n 				Number of bytes to transmit. Must be > 0.
- *      	- retval 	: usart_status_t	enumerated value
+ *      	- param[in] : buf
+ *      	- param[in] : n
+ *      	- Producer function, returns immediately does not wait for
+ *      	  Tx to be complete. Validates inputs and ensures enough
+ *      	  space in ring buffer for transfer.
  *
  *      Note : Baud rate, buffer size and NVIC priority are controlled by
  *      	   macros in config.h.
+ *
+ *      	   USART2_IRQHandler is consumer function, fires once per byte
+ *      	   transmitted and drains the ring buffer until empty.
+ *
+ *      	   Rx is not enabled.
  */
 
 #ifndef USART_H_
@@ -24,13 +32,12 @@
 #include <stddef.h>
 
 typedef enum{
-	USART_STATUS_OK, // no errors thrown, does not guarantee successful Tx
-	USART_STATUS_ERR, // invalid argument or unrecoverable peripheral
+	USART_STATUS_OK,
+	USART_STATUS_ERR, // generic error case
 	USART_STATUS_BUFF_FULL // insufficient space in ring buffer
 } usart_status_t;
 
 void usart2_init(void);
-
 usart_status_t usart2_write_bytes(const uint8_t *buf, size_t n);
 
 #endif /* USART_H_ */

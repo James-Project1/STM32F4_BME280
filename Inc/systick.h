@@ -1,8 +1,21 @@
 /*
  * systick.h
  *
- *  Created on: Mar 11, 2026
+ *  	Created on: Mar 11, 2026
  *      Author: james
+ *
+ *      systick_init() :
+ *      	- configures systick to fire once every 1ms using processor
+ *      	  clock. Must be called prior to use of API.
+ *
+ *     	delay_ms() :
+ *     		- param[in] : ms	duration to block in milliseconds.
+ *     		- blocking delay, cannot be called from an ISR context.
+ *
+ *     	systick_get_tick() :
+ *     		- retval : uint32_t 	current tick count in ms.
+ *     		- returns the raw ms tick counter, rolls over after ~49 days.
+ *     		  used for debounce timing in exti.c.
  */
 
 #ifndef SYSTICK_H_

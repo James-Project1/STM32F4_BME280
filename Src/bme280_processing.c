@@ -30,7 +30,7 @@ bme280_status_t bme280_compensate(void) {
 	return BME280_STATUS_OK;
 }
 
-bme280_data_t* bme280_get_data(void) {
+const bme280_data_t* bme280_get_data(void) {
 	return &data;
 }
 

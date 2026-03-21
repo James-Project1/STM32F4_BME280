@@ -1,27 +1,41 @@
 /*
  * bme280.h
  *
- *  Created on: Mar 11, 2026
+ *  	Created on: Mar 11, 2026
  *      Author: james
  *
- * 	bme280_init()
- * 	 - Reset chip to know state
- *   - Reads chip ID register (0xD0), verifies 0x60
- *   - Reads all 24 bytes of trimming parameters from calib registers
- *     and stores them internally
- *   - Writes config: oversampling, mode, filter, standby time
- *   - Returns BME280_STATUS_ERR_WRONG_ID if chip is absent/wrong
+ *	  	bme280_init() :
+ *	  	 	- reset chip to know state, verify chip ID, get calibration data
+ *	  	      configure sample rate.
  *
- * 	bme280_trigger_measurement()
- *   - Only relevant in forced mode
- *   - Writes forced mode bit to ctrl_meas, kicks off one shot
- *   - Returns BUSY if a prior transfer is still in flight
+ *	  	bme280_read_raw() :
+ *	    	- check device not mid conversion, burst reads raw ADC values into
+ *	      	  internal raw struct.
  *
- * 	bme280_read_raw()
- *   - Burst-reads the six ADC result registers (0xF7–0xFC)
- *     for pressure and temperature, plus 0xFD–0xFE for humidity
- *   - Stores results in the internal context for processing.c to consume
- *   - Non-blocking: starts the I2C transfer and returns immediately
+ *	   	bme280_compensate() :
+ *	   		- applies Bosch integer compensation formulas to internal raw ADC
+ *	   	  	  counts using factory calibration coefficients, stores results
+ *	   	      in internal data struct.
+ *
+ *	   	bme280_get_raw() :
+ *	   		- retval : const bme280_raw_t*
+ *	   		- returns pointer to internal raw ADC struct.
+ *
+ *	   	bme280_get_compensated() :
+ *	   		- retval : const bme280_calib_t*
+ *	   		- returns pointer to internal calibration struct.
+ *
+ *	    bme280_get_data() :
+ *	    	- retval : const bme280_data_t*
+ *	    	- returns pointer to internal compensated data struct.
+ *
+ *	    Note :  Output scaling conventions —
+ *      		temperature : int32_t,  units of 0.01 °C  (2345 = 23.45 °C)
+ *      		pressure    : uint32_t, units of 1 Pa      (101325 = 1013.25 hPa)
+ *      		humidity    : uint32_t, units of 0.01 %RH  (5742 = 57.42 %RH)
+ *
+ *      		sample rate, oversampling, I2C address and register addresses are
+ *      		controlled by macros in config.h.
  */
 
 #ifndef BME280_H_
@@ -30,7 +44,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-// status enum
+/* status enum */
 typedef enum {
     BME280_STATUS_OK,
     BME280_STATUS_BUSY,
@@ -39,14 +53,14 @@ typedef enum {
     BME280_STATUS_ERR_INVALID_INPUT
 } bme280_status_t;
 
-// raw ADC counts
+/* raw ADC counts */
 typedef struct {
-    uint32_t press_raw;   /* 20-bit pressure ADC value */
-    uint32_t temp_raw;    /* 20-bit temperature ADC value */
-    uint16_t hum_raw;     /* 16-bit humidity ADC value */
+    uint32_t press_raw;   // 20-bit pressure ADC value
+    uint32_t temp_raw;    // 20-bit temperature ADC value
+    uint16_t hum_raw;     // 16-bit humidity ADC value
 } bme280_raw_t;
 
-// calibration data
+/* calibration data */
 typedef struct {
     /* temperature */
     uint16_t dig_T1;
@@ -73,24 +87,23 @@ typedef struct {
     int8_t   dig_H6;
 } bme280_calib_t;
 
-// compensated data
+/* compensated data */
 typedef struct {
-	int32_t temperature;
-	uint32_t pressure;
-	uint32_t humidity;
+	int32_t temperature; // 0.01°C
+	uint32_t pressure; // 1 Pa
+	uint32_t humidity; // 0.01 %RH
 }bme280_data_t;
 
 /* bme280_driver API */
 bme280_status_t bme280_init(void);
 bme280_status_t bme280_read_raw(void);
 
-uint8_t bme280_is_done(void);
 const bme280_calib_t* bme280_get_calib(void);
 const bme280_raw_t* bme280_get_raw(void);
 
 /* bme280_processing API */
 bme280_status_t bme280_compensate(void);
 
-bme280_data_t* bme280_get_data(void);
+const bme280_data_t* bme280_get_data(void);
 
 #endif /* BME280_H_ */

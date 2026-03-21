@@ -17,7 +17,6 @@
  */
 
 #include <stdio.h>
-#include <string.h>
 #include "usart.h"
 #include "i2c.h"
 #include "systick.h"
@@ -39,24 +38,24 @@ int main(void)
 
     usart2_write_bytes((uint8_t*)"bme280 init ok\r\n", 16);
 
-    char    buf[64];
-    int     len;
+    char buf[64];
+    int len;
 
     while(1) {
         if(exti_get_print_flag()) {
             bme280_read_raw();
             bme280_compensate();
 
-            const bme280_data_t *d = bme280_get_data();
+            const bme280_data_t *data = bme280_get_data();
 
             len = sprintf(buf,
-                          "T:%ld.%02ld C  P:%lu.%02lu hPa  H:%lu.%02lu%%\r\n",
-                          (long)(d->temperature / 100),
-                          (long)(d->temperature % 100),
-                          (unsigned long)(d->pressure    / 100),
-                          (unsigned long)(d->pressure    % 100),
-                          (unsigned long)(d->humidity    / 100),
-                          (unsigned long)(d->humidity    % 100));
+                          "Temp:%ld.%02ld C  Press:%lu.%02lu hPa  Hum:%lu.%02lu%%\r\n",
+                          (long)(data->temperature / 100),
+                          (long)(data->temperature % 100),
+                          (unsigned long)(data->pressure    / 100),
+                          (unsigned long)(data->pressure    % 100),
+                          (unsigned long)(data->humidity    / 100),
+                          (unsigned long)(data->humidity    % 100));
 
             usart2_write_bytes((uint8_t*)buf, (size_t)len);
             exti_clear_print_flag();

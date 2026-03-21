@@ -212,20 +212,17 @@ void I2C1_EV_IRQHandler(void) {
 void I2C1_ER_IRQHandler(void) {
     uint32_t sr1 = I2C1->SR1;
 
-    /* clear all error flags — write 0 to each set bit */
+    /* clear all error flags */
     if(sr1 & I2C_SR1_BERR) I2C1->SR1 &= ~I2C_SR1_BERR;
     if(sr1 & I2C_SR1_ARLO) I2C1->SR1 &= ~I2C_SR1_ARLO;
     if(sr1 & I2C_SR1_AF)   I2C1->SR1 &= ~I2C_SR1_AF;
     if(sr1 & I2C_SR1_OVR)  I2C1->SR1 &= ~I2C_SR1_OVR;
 
-    /* release the bus */
     I2C1->CR1 |= I2C_CR1_STOP;
 
-    /* restore ACK and POS to known state */
     I2C1->CR1 &= ~I2C_CR1_POS;
     I2C1->CR1 |=  I2C_CR1_ACK;
 
-    /* signal failure to caller */
     handle.status = I2C_STATUS_ERR;
     handle.done   = 1U;
     handle.state  = I2C_STATE_DONE;

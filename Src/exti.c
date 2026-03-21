@@ -16,7 +16,7 @@ static void exti_interrupt_init(void);
 static volatile uint8_t print_flag = 0U;
 static volatile uint32_t last_press_tick = 0U;
 /* public API definitions */
-void exti_init() {
+void exti_init(void) {
 	exti_clock_init();
 	exti_gpio_init();
 	exti_interrupt_init();
@@ -36,7 +36,7 @@ void EXTI15_10_IRQHandler(void) {
 		uint32_t curr_tick = systick_get_tick();
 		if((curr_tick - last_press_tick) < EXTI_DEBOUNCE_MS) return;
 		last_press_tick = curr_tick;
-		print_flag = 1U;
+		print_flag = 1U; // set a print flag
 	}
 }
 
@@ -59,7 +59,7 @@ static void exti_interrupt_init(void) {
 	EXTI->FTSR |= (1U << 13U);    // falling edge on line 13
 	EXTI->IMR |= (1U << 13U);    // unmask line 13
 
-	NVIC_SetPriority(EXTI15_10_IRQn, EXTI_PRIORITY);
+	NVIC_SetPriority(EXTI15_10_IRQn, EXTI_PRIORITY); // init NVIC
 	NVIC_ClearPendingIRQ(EXTI15_10_IRQn);
 	NVIC_EnableIRQ(EXTI15_10_IRQn);
 }

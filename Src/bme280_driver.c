@@ -33,21 +33,16 @@ bme280_status_t bme280_init(void) {
 }
 
 bme280_status_t bme280_read_raw(void) {
-	uint8_t busy = 0U;
-	if(i2c1_read_regs(BME280_ADDR, BME280_STATUS_REG, &busy, 1) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;
-	if(i2c_wait() != BME280_STATUS_OK) return BME280_STATUS_ERR_I2C;
-	if(busy & BME280_STATUS_MEASURING)return BME280_STATUS_BUSY;
+    uint8_t buf[BME280_DATA_LEN];
 
-	uint8_t buf[BME280_DATA_LEN];
+    if(i2c1_read_regs(BME280_ADDR, BME280_DATA_REG, buf, BME280_DATA_LEN) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;
+    if(i2c_wait() != BME280_STATUS_OK) return BME280_STATUS_ERR_I2C;
 
-	if(i2c1_read_regs(BME280_ADDR, BME280_DATA_REG, buf, BME280_DATA_LEN) != I2C_STATUS_OK)return BME280_STATUS_ERR_I2C;
-	if(i2c_wait() != BME280_STATUS_OK) return BME280_STATUS_ERR_I2C;
+    raw.press_raw = ((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] <<  4) | ((uint32_t)buf[2] >>  4);
+    raw.temp_raw  = ((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] <<  4) | ((uint32_t)buf[5] >>  4);
+    raw.hum_raw   = ((uint16_t)buf[6] <<  8) | (uint16_t)buf[7];
 
-	raw.press_raw = ((uint32_t)buf[0] << 12) | ((uint32_t)buf[1] <<  4) | ((uint32_t)buf[2] >>  4);
-	raw.temp_raw  = ((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] <<  4) | ((uint32_t)buf[5] >>  4);
-	raw.hum_raw   = ((uint16_t)buf[6] <<  8) | (uint16_t)buf[7];
-
-	return BME280_STATUS_OK;
+    return BME280_STATUS_OK;
 }
 
 const bme280_calib_t* bme280_get_calib(void) {

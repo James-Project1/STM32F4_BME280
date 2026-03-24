@@ -42,21 +42,22 @@ int main(void)
     int len;
 
     while(1) {
-        if(exti_get_print_flag()) {
+        if(systick_get_measurement_flag()) {
             bme280_read_raw();
             bme280_compensate();
+            systick_clear_measurement_flag();
+        }
 
+        if(exti_get_print_flag()) {
             const bme280_data_t *data = bme280_get_data();
-
             len = sprintf(buf,
                           "Temp:%ld.%02ld C  Press:%lu.%02lu hPa  Hum:%lu.%02lu%%\r\n",
                           (long)(data->temperature / 100),
                           (long)(data->temperature % 100),
-                          (unsigned long)(data->pressure    / 100),
-                          (unsigned long)(data->pressure    % 100),
-                          (unsigned long)(data->humidity    / 100),
-                          (unsigned long)(data->humidity    % 100));
-
+                          (unsigned long)(data->pressure / 100),
+                          (unsigned long)(data->pressure % 100),
+                          (unsigned long)(data->humidity / 100),
+                          (unsigned long)(data->humidity % 100));
             usart2_write_bytes((uint8_t*)buf, (size_t)len);
             exti_clear_print_flag();
         }

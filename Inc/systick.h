@@ -26,5 +26,7 @@
 void systick_init(void);
 void delay_ms(uint32_t ms);
 uint32_t systick_get_tick(void);
+uint8_t systick_get_measurement_flag(void);
+void systick_clear_measurement_flag(void);
 
 #endif /* SYSTICK_H_ */

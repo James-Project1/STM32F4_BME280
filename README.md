@@ -42,5 +42,7 @@ Src/
 4.  Press B1 to print the current sensor reading
 ### Project Goal 
 -  Project goal was to remove the abstraction layer that HAL drivers add, to improve fundamental understanding of how peripherals function.
+### Project Documentation 
+- Project contains in detail documentation for each module. [Documentation](Documentation/)
 ### Project Development
 -  This project is the foundation for follow-on projects including the use of an RTOS and multi-device I2C, and an SPI sensor.  
